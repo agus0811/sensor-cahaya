@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Sensor Cahaya (LDR) Arduino</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --arduino-teal: #00979d;
+            --accent-yellow: #f1c40f;
+            --led-off: #3a3f47;
+            --led-on: #ff3b30;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            max-width: 700px;
+        }
+
+        header h1 {
+            color: #ffffff;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            max-width: 960px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            color: #ffffff;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.6rem;
+        }
+
+        /* Visual Lingkungan & Sensor */
+        .environment-box {
+            height: 160px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sun-icon {
+            font-size: 3rem;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .env-label {
+            margin-top: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+
+        /* Kontrol Slider */
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--arduino-teal);
+        }
+
+        /* Board Arduino & Komponen */
+        .hardware-panel {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #0b0e14;
+            padding: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .component {
+            text-align: center;
+        }
+
+        .ldr-sensor {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #d35400 30%, #e67e22 70%, #bdc3c7 100%);
+            border: 3px solid #7f8c8d;
+            margin: 0 auto 0.5rem;
+            position: relative;
+            box-shadow: 0 0 10px rgba(230, 126, 34, 0.3);
+        }
+
+        .ldr-wave {
+            position: absolute;
+            top: 50%;
+            left: 15%;
+            right: 15%;
+            height: 4px;
+            background: #c0392b;
+            transform: translateY(-50%);
+            border-radius: 2px;
+        }
+
+        .led-bulb {
+            width: 36px;
+            height: 44px;
+            border-radius: 50% 50% 15% 15%;
+            background-color: var(--led-off);
+            margin: 0 auto 0.5rem;
+            transition: all 0.2s ease;
+            border: 2px solid #555;
+        }
+
+        .led-bulb.active {
+            background-color: var(--led-on);
+            box-shadow: 0 0 25px var(--led-on), 0 0 50px rgba(255, 59, 48, 0.6);
+            border-color: #ff8a80;
+        }
+
+        .comp-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Serial Monitor & Data */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .metric-box {
+            background-color: #0b0e14;
+            padding: 0.8rem;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--arduino-teal);
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Arduino Sketch Preview */
+        pre {
+            background-color: #0b0e14;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.82rem;
+            overflow-x: auto;
+            line-height: 1.45;
+            color: #e6edf3;
+        }
+
+        .code-keyword { color: #ff7b72; }
+        .code-type { color: #79c0ff; }
+        .code-number { color: #a5d6ff; }
+        .code-comment { color: #8b949e; }
+        .highlight-line {
+            background-color: rgba(0, 151, 157, 0.25);
+            display: block;
+            border-left: 3px solid var(--arduino-teal);
+            padding-left: 6px;
+            margin-left: -9px;
+        }
+
+        footer {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--arduino-teal);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Simulasi Sensor Cahaya (LDR) Arduino</h1>
+        <p>Geser tingkat kecerahan cahaya untuk melihat perubahan pembacaan pin Analog (A0) dan respons otomatis lampu LED pada pin Digital (D13).</p>
+    </header>
+
+    <div class="container">
+        <!-- Panel Kiri: Visual & Kontrol -->
+        <div class="card">
+            <h2>1. Kontrol Lingkungan & Hardware</h2>
+            
+            <div class="environment-box" id="envBox">
+                <div class="sun-icon" id="sunIcon">☀️</div>
+                <span class="env-label" id="envStatus">Cahaya Terang</span>
+            </div>
+
+            <div class="control-group">
+                <label for="lightSlider">
+                    <span>Intensitas Cahaya (Simulasi)</span>
+                    <strong id="percentDisplay">75%</strong>
+                </label>
+                <input type="range" id="lightSlider" min="0" max="100" value="75">
+            </div>
+
+            <div class="hardware-panel">
+                <div class="component">
+                    <div class="ldr-sensor">
+                        <div class="ldr-wave"></div>
+                    </div>
+                    <div class="comp-title">Sensor LDR<br>(Pin A0)</div>
+                </div>
+
+                <div class="component">
+                    <div style="font-weight: bold; color: var(--arduino-teal); font-size: 1.1rem;">ARDUINO<br>UNO</div>
+                    <div class="comp-title">Threshold: &lt; 400</div>
+                </div>
+
+                <div class="component">
+                    <div class="led-bulb" id="ledBulb"></div>
+                    <div class="comp-title">Lampu LED<br>(Pin D13)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Serial Monitor & Kode C++ -->
+        <div class="card">
+            <h2>2. Serial Monitor & Kode Arduino (.ino)</h2>
+
+            <div class="metrics">
+                <div class="metric-box">
+                    <div class="metric-value" id="analogVal">767</div>
+                    <div class="metric-label">Nilai ADC (0-1023)</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" id="voltVal">3.75 V</div>
+                    <div class="metric-label">Tegangan Pin A0</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" id="ledStateText">LOW</div>
+                    <div class="metric-label">Status LED (D13)</div>
+                </div>
+            </div>
+
+            <pre><code><span class="code-keyword">const</span> <span class="code-type">int</span> ldrPin = A0;
+<span class="code-keyword">const</span> <span class="code-type">int</span> ledPin = <span class="code-number">13</span>;
+<span class="code-keyword">const</span> <span class="code-type">int</span> threshold = <span class="code-number">400</span>; <span class="code-comment">// Batas gelap</span>
+
+<span class="code-type">void</span> setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(<span class="code-number">9600</span>);
+}
+
+<span class="code-type">void</span> loop() {
